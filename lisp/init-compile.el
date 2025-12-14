@@ -54,7 +54,6 @@
       (view-mode 1))))
 (advice-add 'shell-command-on-region :after 'sanityinc/shell-command-in-view-mode)
 
-
 (with-eval-after-load 'compile
   (require 'ansi-color)
   (defun sanityinc/colourise-compilation-buffer ()
@@ -62,6 +61,50 @@
       (ansi-color-apply-on-region compilation-filter-start (point-max))))
   (add-hook 'compilation-filter-hook 'sanityinc/colourise-compilation-buffer))
 
+
+
+;; /*
+;; Local Variables:
+;; quickrun-option-cmd-alist: ((:command . "g++")
+;;                             (:exec    . ("%c -std=c++0x -o %n %s"
+;;                                          "%n apple orange melon"))
+;;                             (:remove  . ("%n")))
+;; End:
+;; */
+(use-package quickrun
+  :init
+  (defun kk/quickrun-smart (&rest plist)
+    "Run quickrun on region if active, otherwise on whole buffer."
+    (interactive)
+    (if (use-region-p)
+        (apply #'quickrun-region (region-beginning) (region-end) plist)
+      (apply #'quickrun plist)))
+  :config
+  ;; check quickrun--language-alist
+  ;; (quickrun-set-default "c" "c/clang")
+  )
+
+
+
+;; create .dir-locals.el
+;; 1. ((nil . ((compile-command . "make -j8"))))
+;; 2. ((nil . ((my-project-tasks . ("make" "make test" "deploy.sh")))))
+(defvar my-project-tasks '("echo Hello, task!")
+  "List of project-specific tasks for my-run-project-task.")
+
+(defun my-project-root ()
+  (if-let ((pr (project-current)))
+      (project-root pr)
+    default-directory))
+
+(defun kk/run-project-task ()
+  "Select and run a task defined in `my-project-tasks` from project root."
+  (interactive)
+  (unless my-project-tasks
+    (user-error "No `my-project-tasks` defined for this project."))
+  (let* ((task (completing-read "Task: " my-project-tasks nil t))
+         (default-directory (my-project-root)))
+    (compile task)))
 
 (provide 'init-compile)
 ;;; init-compile.el ends here

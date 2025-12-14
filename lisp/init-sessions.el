@@ -3,29 +3,29 @@
 ;;; Code:
 
 ;; save a list of open files in ~/.emacs.d/.emacs.desktop
-(setq desktop-path (list user-emacs-directory)
-      desktop-auto-save-timeout 600)
-(desktop-save-mode 1)
+;; (setq desktop-path (list user-emacs-directory)
+;;       desktop-auto-save-timeout 600)
+;; (desktop-save-mode 1)
 
-(defun sanityinc/desktop-time-restore (orig &rest args)
-  (let ((start-time (current-time)))
-    (prog1
-        (apply orig args)
-      (message "Desktop restored in %.2fms"
-               (sanityinc/time-subtract-millis (current-time)
-                                               start-time)))))
-(advice-add 'desktop-read :around 'sanityinc/desktop-time-restore)
+;; (defun sanityinc/desktop-time-restore (orig &rest args)
+;;   (let ((start-time (current-time)))
+;;     (prog1
+;;         (apply orig args)
+;;       (message "Desktop restored in %.2fms"
+;;                (sanityinc/time-subtract-millis (current-time)
+;;                                                start-time)))))
+;; (advice-add 'desktop-read :around 'sanityinc/desktop-time-restore)
 
-(defun sanityinc/desktop-time-buffer-create (orig ver filename &rest args)
-  (let ((start-time (current-time)))
-    (prog1
-        (apply orig ver filename args)
-      (message "Desktop: %.2fms to restore %s"
-               (sanityinc/time-subtract-millis (current-time)
-                                               start-time)
-               (when filename
-                 (abbreviate-file-name filename))))))
-(advice-add 'desktop-create-buffer :around 'sanityinc/desktop-time-buffer-create)
+;; (defun sanityinc/desktop-time-buffer-create (orig ver filename &rest args)
+;;   (let ((start-time (current-time)))
+;;     (prog1
+;;         (apply orig ver filename args)
+;;       (message "Desktop: %.2fms to restore %s"
+;;                (sanityinc/time-subtract-millis (current-time)
+;;                                                start-time)
+;;                (when filename
+;;                  (abbreviate-file-name filename))))))
+;; (advice-add 'desktop-create-buffer :around 'sanityinc/desktop-time-buffer-create)
 
 
 ;; Restore histories and registers after saving
@@ -69,6 +69,33 @@
         tags-file-name
         tags-table-list))
 
+
+
+;; replace builtin auto-save-visited-mode
+(use-package auto-save
+  :defer 4
+  :ensure nil
+  :config
+  (defvar my-auto-save-exclude-major-mode-list
+    '(message-mode)
+    "The major modes where auto-save is disabled.")
+
+  (defun my-check-major-mode-for-auto-save (file)
+    "Check current major mode of FILE for auto save."
+    (ignore file)
+    (memq major-mode my-auto-save-exclude-major-mode-list))
+
+  (defun my-file-too-big-p (file)
+    "Test if FILE is too big."
+    (> (nth 7 (file-attributes file))
+       (* 5000 64)))
+
+  (auto-save-enable)
+  (push 'file-remote-p auto-save-exclude)
+  (push 'my-file-too-big-p auto-save-exclude)
+  (push 'my-check-major-mode-for-auto-save auto-save-exclude)
+  (setq auto-save-idle 2) ; 2 seconds
+  (setq auto-save-slient t))
 
 (provide 'init-sessions)
 ;;; init-sessions.el ends here

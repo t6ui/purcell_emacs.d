@@ -13,9 +13,19 @@
   (add-hook 'eat-exit-hook 'sanityinc/on-eat-exit)
 
   (with-eval-after-load 'eat
+    ;; (custom-set-variables
+    ;;  `(eat-semi-char-non-bound-keys
+    ;;    (quote ,(cons  [?\e ?w] (cl-remove [?\e ?w] eat-semi-char-non-bound-keys :test 'equal)))))
+    ;; (add-to-list 'eat-semi-char-non-bound-keys [?\e ?w])
+    ;; (add-to-list 'eat-semi-char-non-bound-keys [?\e ?=])
     (custom-set-variables
      `(eat-semi-char-non-bound-keys
-       (quote ,(cons [?\e ?w] (cl-remove [?\e ?w] eat-semi-char-non-bound-keys :test 'equal))))))
+       (quote ,(append '([?\e ?w] [?\e ?o])
+                       (cl-remove-if
+                        (lambda (key)
+                          (member key '([?\e ?w] [?\e ?o])))
+                        eat-semi-char-non-bound-keys)))))
+    (define-key eat-semi-char-mode-map (kbd "C-q") nil))
 
   (defcustom sanityinc/eat-map
     (let ((map (make-sparse-keymap)))
@@ -36,6 +46,8 @@
 
   (global-set-key (kbd "C-c t") 'sanityinc/eat-map))
 
+;; (general-define-key "C-q" 'bury-buffer)
+(global-set-key (kbd "C-q") #'bury-buffer)  ;; quoted-insert
 
 
 (provide 'init-terminals)

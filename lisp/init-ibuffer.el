@@ -30,7 +30,7 @@
 ;; Modify the default ibuffer-formats (toggle with `)
 (setq ibuffer-formats
       '((mark modified read-only vc-status-mini " "
-              (name 22 22 :left :elide)
+              (name 60 60 :left :elide)
               " "
               (size-h 9 -1 :right)
               " "

@@ -109,6 +109,15 @@ BUFFER and ALIST are as for `display-buffer-full-frame'."
         (error "Cannot open tramp file")
       (browse-url (concat "file://" file-name)))))
 
+
+
+(defun open-favorites ()
+  "Choose and open a favorite file or directory."
+  (interactive)
+  (let ((choices '("~/.emacs.d/lisp/init-evil.el"
+                   "~/.bashrc")))
+    (let ((file (completing-read "Choose file or directory: " choices)))
+      (find-file file))))
 
 (provide 'init-utils)
 ;;; init-utils.el ends here

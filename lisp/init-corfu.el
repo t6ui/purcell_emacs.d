@@ -6,34 +6,39 @@
 ;; TODO Default sort order should place [a-z] before punctuation
 
 (setq tab-always-indent 'complete)
-(when (maybe-require-package 'orderless)
-  (with-eval-after-load 'vertico
-    (require 'orderless)
-    (setq completion-styles '(orderless basic))))
+;; (when (maybe-require-package 'orderless)
+;;   (with-eval-after-load 'vertico
+;;     (require 'orderless)
+;;     (setq completion-styles '(orderless basic))))
 (setq completion-category-defaults nil
       completion-category-overrides nil)
 (setq completion-cycle-threshold 4)
 
-(when (and (version< "28.1" emacs-version) (maybe-require-package 'corfu))
-  (setq-default corfu-auto t)
-  (with-eval-after-load 'eshell
-    (add-hook 'eshell-mode-hook (lambda () (setq-local corfu-auto nil))))
-  (setq-default corfu-quit-no-match 'separator)
-  (add-hook 'after-init-hook 'global-corfu-mode)
+;; (when (and (version< "28.1" emacs-version) (maybe-require-package 'corfu))
+;;   (setq-default corfu-auto t)
+;;   (with-eval-after-load 'eshell
+;;     (add-hook 'eshell-mode-hook (lambda () (setq-local corfu-auto nil))))
+;;   (setq-default corfu-quit-no-match 'separator)
+;;   (add-hook 'after-init-hook 'global-corfu-mode)
+
+;;   (with-eval-after-load 'corfu
+;;     (corfu-popupinfo-mode))
+
+;;   ;; Make Corfu also work in terminals, without disturbing usual behaviour in GUI
+;;   (when (maybe-require-package 'corfu-terminal)
+;;     (with-eval-after-load 'corfu
+;;       (unless (display-graphic-p)
+;;         (corfu-terminal-mode +1))))
+
+;;   ;; TODO: https://github.com/jdtsmith/kind-icon
+;;   )
 
 
-
-  (with-eval-after-load 'corfu
-    (corfu-popupinfo-mode))
-
-  ;; Make Corfu also work in terminals, without disturbing usual behaviour in GUI
-  (when (maybe-require-package 'corfu-terminal)
-    (with-eval-after-load 'corfu
-      (corfu-terminal-mode)))
-
-  ;; TODO: https://github.com/jdtsmith/kind-icon
-  )
-
+;;; https://github.com/minad/corfu/issues/223#issuecomment-2085418643
+;; (dotimes (i 10)
+;;   (define-key corfu-mode-map
+;;               (kbd (format "M-%s" i))
+;;               (kbd (format "C-%s <tab>" i))))
 
 (provide 'init-corfu)
 ;;; init-corfu.el ends here

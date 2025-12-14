@@ -45,6 +45,19 @@
 
 (global-set-key (kbd "C-x 1") 'sanityinc/toggle-delete-other-windows)
 
+(defun my-transient-winner-undo ()
+  "Transient version of `winner-undo'."
+  (interactive)
+  (let ((echo-keystrokes nil))
+    (winner-undo)
+    (message "Winner: [u]ndo [r]edo")
+    (set-transient-map
+     (let ((map (make-sparse-keymap)))
+       (define-key map [?u] #'winner-undo)
+       (define-key map [?r] #'winner-redo)
+       map)
+     t)))
+
 
 ;; Rearrange split windows
 
@@ -108,6 +121,47 @@ Call a second time to restore the original window configuration."
   (add-hook 'after-init-hook (apply-partially 'windmove-default-keybindings 'control))
   (add-hook 'after-init-hook (apply-partially 'windswap-default-keybindings 'shift 'control)))
 
+
+(use-package winum
+  :defer 0.5
+  :config
+  (setq winum-format "%s")
+  (setq winum-mode-line-position 0)
+  (setq winum-scope 'frame-local)
+  (set-face-attribute 'winum-face nil :foreground "DeepPink" :underline "DeepPink" :weight 'bold)
+  (winum-mode 1))
+
+
+
+(use-package popper
+  :bind (("M-o" . popper-toggle)) ; count-words-region
+  :init
+  (if (display-graphic-p)
+      (setq popper-reference-buffers '(grep-mode occur-mode))
+    (setq popper-reference-buffers nil))
+
+  (setq popper-reference-buffers
+        '(grep-mode
+          occur-mode
+          eat-mode
+          ;; compilation-mode
+          ;; help-mode
+          ;; "\\*Compile-Log\\*"
+          ;; "\\*Completions\\*"
+          ;; "\\*Messages\\*"
+          ;; "\\*Warnings\\*"
+          ;; "\\*Help\\*"
+          ;; "\\*Shell Command Output\\*"
+          ;; "\\*Async Shell Command\\*"
+          ;; "\\*eshell\\*"
+          ;; "^\\*vterm.*\\*$"
+          ;; "^\\*shell.*\\*$"
+          ))
+
+  ;; (setq popper-group-function #'popper-group-by-project)
+  ;; (setq popper-mode-line nil)
+  (popper-mode +1)
+  (popper-echo-mode +1))
 
 (provide 'init-windows)
 ;;; init-windows.el ends here

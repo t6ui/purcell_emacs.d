@@ -32,6 +32,7 @@
  tooltip-delay 1.5
  truncate-lines nil
  truncate-partial-width-windows nil)
+(setq large-file-warning-threshold nil)
 
 (add-hook 'after-init-hook 'delete-selection-mode)
 
@@ -63,8 +64,16 @@
 
 ;;; A simple visible bell which works in all terminal types
 (require-package 'mode-line-bell)
-(add-hook 'after-init-hook 'mode-line-bell-mode)
+;; (add-hook 'after-init-hook 'mode-line-bell-mode)
 
+
+;; @see http://emacsredux.com/blog/2014/04/05/which-function-mode/
+(which-function-mode)
+(with-eval-after-load 'which-func
+  (setq-default header-line-format
+                '((which-function-mode ("" which-func-format " "))))
+  (setq-default mode-line-misc-info
+                (assq-delete-all 'which-function-mode mode-line-misc-info)))
 
 
 ;;; Newline behaviour (see also electric-indent-mode, enabled above)
@@ -87,12 +96,14 @@
 (when (fboundp 'display-line-numbers-mode)
   (setq-default display-line-numbers-width 3)
   (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+  (add-hook 'text-mode-hook 'display-line-numbers-mode)
   (add-hook 'yaml-mode-hook 'display-line-numbers-mode)
   (add-hook 'yaml-ts-mode-hook 'display-line-numbers-mode))
 
 
 
 (when (boundp 'display-fill-column-indicator)
+  (setq-default fill-column 90)
   (setq-default indicate-buffer-boundaries 'left)
   (setq-default display-fill-column-indicator-character ?┊)
   (add-hook 'prog-mode-hook 'display-fill-column-indicator-mode))
@@ -103,15 +114,31 @@
   (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
 
-(when (maybe-require-package 'symbol-overlay)
-  (dolist (hook '(prog-mode-hook html-mode-hook yaml-mode-hook conf-mode-hook))
-    (add-hook hook 'symbol-overlay-mode))
-  (with-eval-after-load 'symbol-overlay
-    (diminish 'symbol-overlay-mode)
-    (define-key symbol-overlay-mode-map (kbd "M-i") 'symbol-overlay-put)
-    (define-key symbol-overlay-mode-map (kbd "M-I") 'symbol-overlay-remove-all)
-    (define-key symbol-overlay-mode-map (kbd "M-n") 'symbol-overlay-jump-next)
-    (define-key symbol-overlay-mode-map (kbd "M-p") 'symbol-overlay-jump-prev)))
+
+;; (when (maybe-require-package 'symbol-overlay)
+;;   (with-eval-after-load 'symbol-overlay
+;;     (diminish 'symbol-overlay-mode)
+;;     (setq symbol-overlay-inhibit-map t)))
+
+;; (defun kk/symbol-overlay-put (&optional beg end)
+;;   "Toggle all overlays of symbol or active region."
+;;   (interactive "r")
+;;   (unless (minibufferp)
+;;     (let* ((symbol (if (region-active-p)
+;;                        (prog1 (regexp-quote (buffer-substring-no-properties beg end))
+;;                          (deactivate-mark))
+;;                      (symbol-overlay-get-symbol)))
+;;            (keyword (symbol-overlay-assoc symbol)))
+;;       (if keyword
+;;           (if (symbol-overlay-maybe-reput symbol keyword)
+;;               (symbol-overlay-maybe-count keyword)
+;;             (symbol-overlay-maybe-remove keyword)
+;;             (symbol-overlay-maybe-put-temp))
+;;         (unless (region-active-p)
+;;           (and (looking-at-p "\\_>") (backward-char)))
+;;         (symbol-overlay-maybe-count
+;;          (symbol-overlay-put-all symbol symbol-overlay-scope)
+;;          t)))))
 
 
 ;;; Zap *up* to char is a handy pair for zap-to-char
@@ -144,6 +171,73 @@
 
 (when (fboundp 'repeat-mode)
   (add-hook 'after-init-hook 'repeat-mode))
+
+
+;; {{ narrow region
+(defun narrow-to-region-indirect-buffer-maybe (start end use-indirect-buffer)
+  "Indirect buffer could multiple widen on same file."
+  (if (region-active-p) (deactivate-mark))
+  (if use-indirect-buffer
+      (with-current-buffer (clone-indirect-buffer
+                            (generate-new-buffer-name
+                             (format "%s-indirect-:%s-:%s"
+                                     (buffer-name)
+                                     (line-number-at-pos start)
+                                     (line-number-at-pos end)))
+                            'display)
+        (narrow-to-region start end)
+        (goto-char (point-min)))
+    (narrow-to-region start end)))
+
+;; @see https://gist.github.com/mwfogleman/95cc60c87a9323876c6c
+;; fixed to behave correctly in org-src buffers; taken from:
+;; https://lists.gnu.org/archive/html/emacs-orgmode/2019-09/msg00094.html
+(defun my-narrow-or-widen-dwim (&optional use-indirect-buffer)
+  "If the buffer is narrowed, it widens.
+Otherwise, it narrows to region or Org subtree.
+If USE-INDIRECT-BUFFER is t, use `indirect-buffer' to hold widen content."
+  (interactive "P")
+  (cond
+   ((and (not use-indirect-buffer) (buffer-narrowed-p))
+    (widen))
+
+   ((and (not use-indirect-buffer)
+         (eq major-mode 'org-mode)
+         (fboundp 'org-src-edit-buffer-p)
+         (org-src-edit-buffer-p))
+    (org-edit-src-exit))
+
+   ;; narrow to region
+   ((region-active-p)
+    (narrow-to-region-indirect-buffer-maybe (region-beginning)
+                                            (region-end)
+                                            use-indirect-buffer))
+
+   ;; narrow to specific org element
+   ((derived-mode-p 'org-mode)
+    (cond
+     ((ignore-errors (org-edit-src-code)) t)
+     ((ignore-errors (org-narrow-to-block) t))
+     ((ignore-errors (org-narrow-to-element) t))
+     (t (org-narrow-to-subtree))))
+
+   ((derived-mode-p 'diff-mode)
+    (let* (b e)
+      (save-excursion
+        ;; If the (point) is already beginning or end of file diff,
+        ;; the `diff-beginning-of-file' and `diff-end-of-file' return nil
+        (setq b (progn (diff-beginning-of-file) (point)))
+        (setq e (progn (diff-end-of-file) (point))))
+      (when (and b e (< b e))
+        (narrow-to-region-indirect-buffer-maybe b e use-indirect-buffer))))
+
+   ((derived-mode-p 'prog-mode)
+    (mark-defun)
+    (narrow-to-region-indirect-buffer-maybe (region-beginning)
+                                            (region-end)
+                                            use-indirect-buffer))
+   (t (error "Please select a region to narrow to"))))
+;; }}
 
 
 ;;; Handy key bindings
@@ -263,6 +357,13 @@ ORIG is the advised function, which is called with its ARGS."
 
 (advice-add 'kmacro-call-macro :around 'sanityinc/disable-features-during-macro-call)
 
+
+(defun kk/align-dwim ()
+  "Align intelligently based on whether a region is active."
+  (interactive)
+  (if (region-active-p)
+      (call-interactively #'align)
+    (call-interactively #'align-current)))
 
 (provide 'init-editing-utils)
 ;;; init-editing-utils.el ends here

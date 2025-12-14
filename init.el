@@ -15,6 +15,10 @@
 (when (version< emacs-version "28.1")
   (message "Your Emacs is old, and some functionality in this config will be disabled. Please upgrade if possible."))
 
+;; (add-hook 'emacs-startup-hook (lambda () (debug-on-entry 'visit-tags-table-buffer)))
+;; (add-hook 'emacs-startup-hook (lambda () (trace-function 'visit-tags-table-buffer)))
+;; (setq debug-on-quit t)
+
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 (require 'init-benchmarking) ;; Measure startup time
 
@@ -23,7 +27,7 @@
 
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
-(setq gc-cons-threshold (* 128 1024 1024))
+(setq gc-cons-threshold (* 256 1024 1024))
 
 
 ;; Process performance tuning
@@ -68,7 +72,7 @@
 (require 'init-gui-frames)
 (require 'init-dired)
 (require 'init-isearch)
-(require 'init-grep)
+;; (require 'init-grep)
 (require 'init-uniquify)
 (require 'init-ibuffer)
 (require 'init-flymake)
@@ -76,11 +80,19 @@
 
 (require 'init-recentf)
 (require 'init-minibuffer)
+(require 'init-clipboard)
 (require 'init-hippie-expand)
+(require 'init-snippets)
 (require 'init-corfu)
+(require 'init-company)
 (require 'init-windows)
 (require 'init-sessions)
 (require 'init-mmm)
+(require 'init-ctags)
+(require 'init-highlight)
+(require 'init-format)
+(require 'init-translate)
+(require 'init-evil)
 
 (require 'init-editing-utils)
 (require 'init-whitespace)
@@ -122,6 +134,9 @@
 (require 'init-docker)
 (require 'init-terraform)
 (require 'init-nix)
+(require 'init-cc-mode)
+(require 'init-blueprint)
+(require 'init-pdf)
 (maybe-require-package 'nginx-mode)
 (maybe-require-package 'just-mode)
 (when (maybe-require-package 'just-ts-mode)
@@ -158,7 +173,6 @@
 (when *is-a-mac*
   (require-package 'osx-location))
 (maybe-require-package 'dotenv-mode)
-(maybe-require-package 'shfmt)
 
 (when (maybe-require-package 'uptimes)
   (setq-default uptimes-keep-count 200)
@@ -192,6 +206,10 @@
 
 ;; Allow users to provide an optional "init-local" containing personal settings
 (require 'init-local nil t)
+
+;; need switch twice fullscreen to enter mac's new space.
+(when (and *is-a-mac* (display-graphic-p))
+  (toggle-frame-fullscreen))
 
 (provide 'init)
 

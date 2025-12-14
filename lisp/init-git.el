@@ -38,7 +38,21 @@
 
 
 (with-eval-after-load 'magit
-  (define-key magit-status-mode-map (kbd "C-M-<up>") 'magit-section-up))
+  (define-key magit-status-mode-map (kbd "C-M-<up>") 'magit-section-up)
+
+  (defun kk/magit-gerrit-push (&optional branch)
+    (interactive
+     (let ((up (magit-get-upstream-branch)))
+       (list (if up
+                 (string-remove-prefix (concat (car (split-string up "/")) "/") up)
+               (read-string "Gerrit branch: ")))))
+    (let ((remote (magit-get-upstream-remote)))
+      (magit-git-command-topdir (format "git push %s HEAD:refs/for/%s" remote branch))))
+
+  (transient-append-suffix 'magit-push "u"
+    '("P" "push <remote> HEAD:refs/for/<upstream>" kk/magit-gerrit-push))
+
+  (setq magit-log-margin-show-committer-date t))
 
 (maybe-require-package 'magit-todos)
 
@@ -85,6 +99,70 @@
          (compilation-buffer-name-function (lambda (major-mode-name) "*git-svn*")))
     (compile (concat "git svn " command))))
 
+(defvar kk/ediff-buffer-A nil)
+(defvar kk/ediff-buffer-B nil)
+
+(defun kk/ediff-new ()
+  "Open two empty buffers and prepare for Ediff."
+  (interactive)
+  (setq kk/ediff-buffer-A
+        (or (get-buffer "*Diff-A*")
+            (generate-new-buffer "*Diff-A*")))
+  (setq kk/ediff-buffer-B
+        (or (get-buffer "*Diff-B*")
+            (generate-new-buffer "*Diff-B*")))
+  (delete-other-windows)
+  (split-window-right)
+  (switch-to-buffer kk/ediff-buffer-A)
+  (other-window 1)
+  (switch-to-buffer kk/ediff-buffer-B)
+  (message "Fill in both buffers, then use kk/ediff-go to compare."))
+
+(autoload 'ediff-other-buffer "ediff"
+  "Return the other buffer for comparison in Ediff." nil nil)
+
+(defun kk/ediff-buffers-wordwise (buffer-A buffer-B &optional startup-hooks job-name)
+  "Compare BUFFER-A and BUFFER-B in wordwise mode using Ediff."
+  (interactive
+   (let (bf)
+     (list (setq bf (read-buffer "Buffer A to compare: "
+                                 (ediff-other-buffer "") t))
+           (read-buffer "Buffer B to compare: "
+                        (progn
+                          ;; realign buffers so that two visible bufs will be
+                          ;; at the top
+                          (save-window-excursion (other-window 1))
+                          (ediff-other-buffer bf))
+                        t))))
+
+  (setq buffer-A (get-buffer buffer-A)
+        buffer-B (get-buffer buffer-B)
+        job-name (or job-name 'ediff-buffers-wordwise))
+  (cl-assert buffer-A nil "Not a live buffer: %s" buffer-A)
+  (cl-assert buffer-B nil "Not a live buffer: %s" buffer-B)
+  (ediff-regions-internal buffer-A
+                          (with-current-buffer buffer-A
+                            (point-min))
+                          (with-current-buffer buffer-A
+                            (point-max))
+                          buffer-B
+                          (with-current-buffer buffer-B
+                            (point-min))
+                          (with-current-buffer buffer-B
+                            (point-max))
+                          startup-hooks
+                          job-name
+                          'word-mode
+                          nil))
+
+(defun kk/ediff-go ()
+  "Run Ediff on the two prepared buffers."
+  (interactive)
+  (unless (and (buffer-live-p kk/ediff-buffer-A)
+               (buffer-live-p kk/ediff-buffer-B))
+    (error "Buffers not prepared, run kk/ediff-start first"))
+  (ediff-buffers (buffer-name kk/ediff-buffer-A)
+                 (buffer-name kk/ediff-buffer-B)))
 
 (provide 'init-git)
 ;;; init-git.el ends here

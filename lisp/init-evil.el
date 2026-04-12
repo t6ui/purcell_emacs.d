@@ -64,6 +64,7 @@
   (add-hook 'magit-blob-mode-hook #'evil-emacs-state)
 
   (with-eval-after-load 'citre
+    (evil-add-command-properties #'citre-backend-after-jump :jump t)
     (evil-add-command-properties #'citre-jump :jump t)
     (evil-add-command-properties #'citre-jump-or-grep :jump t))
 
@@ -220,6 +221,7 @@
     (magit-mode . emacs)
     (ediff-mode . emacs)
     (occur-mode . emacs)
+    (pdf-view-mode . emacs)
     (grep-mode . emacs)
     (Man-mode . emacs)
     (diff-mode . emacs)
@@ -271,7 +273,9 @@
   "by" 'copy-filename-of-current-buffer
   "bY" 'copy-buffer-name-without-extension
   "xb" 'ibuffer                      ; list-buffers
-  "xk" 'kill-this-buffer
+  "xk" (lambda ()
+         (interactive)
+         (kill-buffer (current-buffer)))
   "bq" 'bury-buffer
   "bR" 'revert-buffer
 
@@ -315,7 +319,9 @@
   "xf" 'find-file
   "xs" 'save-buffer
 
-  ;; gpt
+  ;; gptel
+  "gg" 'gptel-send
+  "gr" 'gptel-rewrite
 
   ;;= highlight & httpd & help
   "hk" 'describe-key
@@ -324,7 +330,7 @@
   "hf" 'describe-function
   "hf" 'describe-function
   "hm" 'describe-mode
-  "hk" 'describe-keymap
+  "hK" 'describe-keymap
   "hs" 'describe-symbol
   "hi" 'info-apropos ; search indices of all known Info files
   "he" 'info-emacs-manual ; i(Info-index) ^(go to info directory node)

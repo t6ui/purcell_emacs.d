@@ -156,7 +156,7 @@
 
     (with-eval-after-load 'consult
       (require 'consult)
-      (require 'popper)
+      ;; (require 'popper)
 
       (defun kk/buffer-candidate-with-info (buf)
         "Return a `(display . buffer)` pair for BUF, with mode or popper status info."

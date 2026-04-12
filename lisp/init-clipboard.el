@@ -48,9 +48,35 @@ If N is not nil, copy file name and line number."
     (kill-new (project-root (project-current)))
     (message "Project path => clipboard & yank ring")))
 
+;; check terminal if support OSC-52
+;; printf '\033]52;c;%s\a' "$(printf 'test' | base64)"
+;; https://chromium.googlesource.com/apps/libapps/+/HEAD/nassh/docs/FAQ.md#Is-OSC-52-aka-clipboard-operations_supported
 (use-package clipetty
   :ensure t
   :hook (after-init . global-clipetty-mode))
+
+(unless (display-graphic-p)
+  (setenv "SSH_TTY" "/dev/tty"))
+
+(defun is-wsl-p ()
+  "判断是否为 WSL 环境。"
+  (and (file-exists-p "/proc/version")
+       (string-match "microsoft" (with-temp-buffer
+                                   (insert-file-contents "/proc/version")
+                                   (buffer-string)))))
+(defun wsl-copy-to-windows-clipboard ()
+  "将选中的区域拷贝到 Windows 剪贴板（使用 clip.exe）。"
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (let ((temp-file (make-temp-file "emacs-wsl-clip")))
+          (write-region (region-beginning) (region-end) temp-file)
+          (call-process "clip.exe" nil 0 nil "<" temp-file)
+          (delete-file temp-file)
+          (message "内容已拷贝到 Windows 剪贴板")))
+    (message "请先选中要拷贝的内容！")))
+
+;; (global-set-key (kbd "C-c w") 'wsl-copy-to-windows-clipboard)
 
 ;; maybe I should set env for SSH_TTY
 ;; (defun clipetty--emit (string)

@@ -52,7 +52,12 @@
                          :render (gt-overlay-render)))
           (query . ,(gt-translator
                      :taker (gt-taker :text 'point :pick nil :prompt 'buffer)
-                     :engines (gt-bing-engine)
+                     :engines (list (gt-stardict-engine
+                                     :dir "~/.startdict/dic"
+                                     :exact t
+                                     :if 'word)
+                                    (gt-youdao-dict-engine :if 'word)
+                                    (gt-bing-engine))
                      :render (gt-buffer-render)))
           (Text-Utility . ,(gt-text-utility
                             :taker (gt-taker :pick nil)

@@ -93,6 +93,7 @@
 (require 'init-format)
 (require 'init-translate)
 (require 'init-evil)
+(require 'init-ai)
 
 (require 'init-editing-utils)
 (require 'init-whitespace)

@@ -27,6 +27,9 @@
   (define-key isearch-mode-map (kbd "C-o") 'sanityinc/isearch-occur)
   (define-key isearch-mode-map (kbd "C-c C-o") 'sanityinc/isearch-occur))
 
+(add-hook 'occur-hook
+          (lambda () (occur-rename-buffer t)))
+
 
 ;; Search back/forth for the symbol at point
 ;; See http://www.emacswiki.org/emacs/SearchAtPoint

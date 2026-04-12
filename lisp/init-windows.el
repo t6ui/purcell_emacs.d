@@ -141,9 +141,9 @@ Call a second time to restore the original window configuration."
     (setq popper-reference-buffers nil))
 
   (setq popper-reference-buffers
-        '(grep-mode
-          occur-mode
-          eat-mode
+        '(eat-mode
+          ;; grep-mode
+          ;; occur-mode
           ;; compilation-mode
           ;; help-mode
           ;; "\\*Compile-Log\\*"
@@ -162,6 +162,14 @@ Call a second time to restore the original window configuration."
   ;; (setq popper-mode-line nil)
   (popper-mode +1)
   (popper-echo-mode +1))
+
+(add-to-list 'display-buffer-alist
+             '(,(lambda (buffer _action)
+                  (with-current-buffer buffer
+                    (memq major-mode '(grep-mode occur-mode))))
+               (display-buffer-reuse-window
+                display-buffer-below-selected)
+               (window-height . 0.3)))
 
 (provide 'init-windows)
 ;;; init-windows.el ends here
